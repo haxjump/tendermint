@@ -116,11 +116,14 @@ func (env *Environment) BroadcastTxCommit(ctx context.Context, req *coretypes.Re
 					"err", err)
 				return &coretypes.ResultBroadcastTxCommit{
 						CheckTx: *r,
-						Hash:    tx.Hash(),
+						Hash:    req.Tx.Hash(),
 					}, fmt.Errorf("timeout waiting for commit of tx %s (%s)",
-						tx.Hash(), time.Since(startAt))
+						req.Tx.Hash(), time.Since(startAt))
 			case <-timer.C:
-				txres, err := env.Tx(ctx, tx.Hash(), false)
+				txres, err := env.Tx(ctx, &coretypes.RequestTx{
+					Hash:  req.Tx.Hash(),
+					Prove: false,
+				})
 				if err != nil {
 					jitter := 100*time.Millisecond + time.Duration(rand.Int63n(int64(time.Second))) // nolint: gosec
 					backoff := 100 * time.Duration(count) * time.Millisecond
@@ -131,7 +134,7 @@ func (env *Environment) BroadcastTxCommit(ctx context.Context, req *coretypes.Re
 				return &coretypes.ResultBroadcastTxCommit{
 					CheckTx:  *r,
 					TxResult: txres.TxResult,
-					Hash:     tx.Hash(),
+					Hash:     req.Tx.Hash(),
 					Height:   txres.Height,
 				}, nil
 			}
@@ -175,7 +178,7 @@ func (env *Environment) NumUnconfirmedTxs(ctx context.Context) (*coretypes.Resul
 // be added to the mempool either.
 // More: https://docs.tendermint.com/master/rpc/#/Tx/check_tx
 func (env *Environment) CheckTx(ctx context.Context, req *coretypes.RequestCheckTx) (*coretypes.ResultCheckTx, error) {
-	res, err := env.ProxyApp.CheckTx(ctx, abci.RequestCheckTx{Tx: tx})
+	res, err := env.ProxyApp.CheckTx(ctx, abci.RequestCheckTx{Tx: req.Tx})
 	if err != nil {
 		return nil, err
 	}

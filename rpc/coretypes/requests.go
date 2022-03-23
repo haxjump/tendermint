@@ -28,11 +28,47 @@ type requestBlockchainInfoJSON struct {
 	MaxHeight intString `json:"maxHeight"`
 }
 
+func (r *RequestBlockchainInfo) UnmarshalJSON(data []byte) error {
+	var tmp requestBlockchainInfoJSON
+	if err := json.Unmarshal(data, &tmp); err != nil {
+		return err
+	}
+	r.MinHeight = int64(tmp.MinHeight)
+	r.MaxHeight = int64(tmp.MaxHeight)
+	return nil
+}
+
 type RequestGenesisChunked struct {
 	Chunk int64
 }
 
+type requestGenesisChunkedJSON struct {
+	Chunk intString `json:"chunk"`
+}
+
+func (r *RequestGenesisChunked) UnmarshalJSON(data []byte) error {
+	var tmp requestGenesisChunkedJSON
+	if err := json.Unmarshal(data, &tmp); err != nil {
+		return err
+	}
+	r.Chunk = int64(tmp.Chunk)
+	return nil
+}
+
 type RequestBlockInfo struct {
+	Height *int64
+}
+
+func (r *RequestBlockInfo) UnmarshalJSON(data []byte) error {
+	var tmp requestBlockInfoJSON
+	if err := json.Unmarshal(data, &tmp); err != nil {
+		return err
+	}
+	r.Height = (*int64)(tmp.Height)
+	return nil
+}
+
+type requestBlockInfoJSON struct {
 	Height *Int64 `json:"height"`
 }
 
@@ -99,6 +135,19 @@ type requestTxSearchJSON struct {
 	OrderBy string     `json:"order_by"`
 }
 
+func (r *RequestTxSearch) UnmarshalJSON(data []byte) error {
+	var tmp requestTxSearchJSON
+	if err := json.Unmarshal(data, &tmp); err != nil {
+		return err
+	}
+	r.Query = tmp.Query
+	r.Prove = tmp.Prove
+	r.Page = maybeIntPtr(tmp.Page)
+	r.PerPage = maybeIntPtr(tmp.PerPage)
+	r.OrderBy = tmp.OrderBy
+	return nil
+}
+
 type RequestBlockSearch struct {
 	Query   string
 	Page    *int
@@ -113,6 +162,18 @@ type requestBlockSearchJSON struct {
 	OrderBy string     `json:"order_by"`
 }
 
+func (r *RequestBlockSearch) UnmarshalJSON(data []byte) error {
+	var tmp requestBlockSearchJSON
+	if err := json.Unmarshal(data, &tmp); err != nil {
+		return err
+	}
+	r.Query = tmp.Query
+	r.Page = maybeIntPtr(tmp.Page)
+	r.PerPage = maybeIntPtr(tmp.PerPage)
+	r.OrderBy = tmp.OrderBy
+	return nil
+}
+
 type RequestValidators struct {
 	Height  *int64
 	Page    *int
@@ -125,12 +186,32 @@ type requestValidatorsJSON struct {
 	PerPage *intString `json:"per_page"`
 }
 
+func (r *RequestValidators) UnmarshalJSON(data []byte) error {
+	var tmp requestValidatorsJSON
+	if err := json.Unmarshal(data, &tmp); err != nil {
+		return err
+	}
+	r.Height = (*int64)(tmp.Height)
+	r.Page = maybeIntPtr(tmp.Page)
+	r.PerPage = maybeIntPtr(tmp.PerPage)
+	return nil
+}
+
 type RequestConsensusParams struct {
 	Height *int64
 }
 
 type requestConsensusParamsJSON struct {
 	Height *intString `json:"height"`
+}
+
+func (r *RequestConsensusParams) UnmarshalJSON(data []byte) error {
+	var tmp requestConsensusParamsJSON
+	if err := json.Unmarshal(data, &tmp); err != nil {
+		return err
+	}
+	r.Height = (*int64)(tmp.Height)
+	return nil
 }
 
 type RequestUnconfirmedTxs struct {
@@ -158,10 +239,29 @@ type RequestBroadcastTx struct {
 }
 
 type RequestABCIQuery struct {
+	Path   string
+	Data   bytes.HexBytes
+	Height int64
+	Prove  bool
+}
+
+type requestABCIQueryJSON struct {
 	Path   string         `json:"path"`
 	Data   bytes.HexBytes `json:"data"`
 	Height intString      `json:"height"`
 	Prove  bool           `json:"prove"`
+}
+
+func (r *RequestABCIQuery) UnmarshalJSON(data []byte) error {
+	var tmp requestABCIQueryJSON
+	if err := json.Unmarshal(data, &tmp); err != nil {
+		return err
+	}
+	r.Path = tmp.Path
+	r.Data = tmp.Data
+	r.Height = int64(tmp.Height)
+	r.Prove = tmp.Prove
+	return nil
 }
 
 type RequestBroadcastEvidence struct {

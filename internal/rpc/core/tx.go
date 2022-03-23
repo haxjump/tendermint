@@ -31,7 +31,7 @@ func (env *Environment) Tx(ctx context.Context, req *coretypes.RequestTx) (*core
 			}
 
 			var proof types.TxProof
-			if prove {
+			if req.Prove {
 				block := env.BlockStore.LoadBlock(r.Height)
 				proof = block.Data.Txs.Proof(int(r.Index))
 			}

@@ -11,10 +11,10 @@ import (
 // ABCIQuery queries the application for some information.
 // More: https://docs.tendermint.com/master/rpc/#/ABCI/abci_query
 func (env *Environment) ABCIQuery(ctx context.Context, req *coretypes.RequestABCIQuery) (*coretypes.ResultABCIQuery, error) {
-	resQuery, err := env.ProxyAppQuery.Query(ctx, abci.RequestQuery{
+	resQuery, err := env.ProxyApp.Query(ctx, abci.RequestQuery{
 		Path:   req.Path,
 		Data:   req.Data,
-		Height: req.Height,
+		Height: int64(req.Height),
 		Prove:  req.Prove,
 	})
 	if err != nil {
