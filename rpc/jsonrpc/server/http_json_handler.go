@@ -10,7 +10,6 @@ import (
 	"io"
 	"net/http"
 	"reflect"
-	"strconv"
 	"strings"
 
 	"github.com/tendermint/tendermint/libs/log"
@@ -164,22 +163,6 @@ func adjustParams(fn *RPCFunc, data []byte) (json.RawMessage, error) {
 	}
 	return nil, errors.New("parameters must be an object or an array")
 
-}
-
-// isStringValue reports whether data is a JSON string value.
-func isStringValue(data json.RawMessage) bool {
-	return len(data) != 0 && data[0] == '"'
-}
-
-type int64String int64
-
-func (z *int64String) UnmarshalText(data []byte) error {
-	v, err := strconv.ParseInt(string(data), 10, 64)
-	if err != nil {
-		return err
-	}
-	*z = int64String(v)
-	return nil
 }
 
 // writes a list of available rpc endpoints as an html page

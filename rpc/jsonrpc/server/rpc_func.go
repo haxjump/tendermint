@@ -142,19 +142,3 @@ func newRPCFunc(f interface{}) (*RPCFunc, error) {
 		argNames: argNames,
 	}, nil
 }
-
-//-------------------------------------------------------------
-
-// NOTE: assume returns is result struct and error. If error is not nil, return it
-func unreflectResult(returns []reflect.Value) (interface{}, error) {
-	errV := returns[1]
-	if err, ok := errV.Interface().(error); ok && err != nil {
-		return nil, err
-	}
-	rv := returns[0]
-	// the result is a registered interface,
-	// we need a pointer to it so we can marshal with type byte
-	rvp := reflect.New(rv.Type())
-	rvp.Elem().Set(rv)
-	return rvp.Interface(), nil
-}
