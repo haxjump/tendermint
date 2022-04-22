@@ -14,7 +14,7 @@ func (env *Environment) ABCIQuery(ctx context.Context, req *coretypes.RequestABC
 	resQuery, err := env.ProxyApp.Query(ctx, abci.RequestQuery{
 		Path:   req.Path,
 		Data:   req.Data,
-		Height: int64(req.Height),
+		Height: req.Height,
 		Prove:  req.Prove,
 	})
 	if err != nil {

@@ -59,47 +59,17 @@ type RequestBlockInfo struct {
 	Height *int64
 }
 
-func (r *RequestBlockInfo) UnmarshalJSON(data []byte) error {
-	var tmp requestBlockInfoJSON
-	if err := json.Unmarshal(data, &tmp); err != nil {
-		return err
-	}
-	r.Height = (*int64)(tmp.Height)
-	return nil
-}
-
-type requestBlockInfoJSON struct {
-	Height *Int64 `json:"height"`
-}
-
-func (r *RequestGenesisChunked) UnmarshalJSON(data []byte) error {
-	var tmp requestGenesisChunkedJSON
-	if err := json.Unmarshal(data, &tmp); err != nil {
-		return err
-	}
-	r.Chunk = int64(tmp.Chunk)
-	return nil
-}
-
-type requestGenesisChunkedJSON struct {
-	Chunk intString `json:"chunk"`
-}
-
-type RequestBlockInfo struct {
-	Height *int64
-}
-
-func (r *RequestBlockInfo) UnmarshalJSON(data []byte) error {
-	var tmp requestBlockInfoJSON
-	if err := json.Unmarshal(data, &tmp); err != nil {
-		return err
-	}
-	r.Height = (*int64)(tmp.Height)
-	return nil
-}
-
 type requestBlockInfoJSON struct {
 	Height *intString `json:"height"`
+}
+
+func (r *RequestBlockInfo) UnmarshalJSON(data []byte) error {
+	var tmp requestBlockInfoJSON
+	if err := json.Unmarshal(data, &tmp); err != nil {
+		return err
+	}
+	r.Height = (*int64)(tmp.Height)
+	return nil
 }
 
 type RequestBlockByHash struct {
