@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"html/template"
 	"io"
-	stdlog "log"
 	"net/http"
 	"reflect"
 	"strconv"
@@ -139,7 +138,6 @@ func parseParams(ctx context.Context, fn *RPCFunc, paramData []byte) ([]reflect.
 	}
 	arg := reflect.New(fn.param)
 	if err := json.Unmarshal(bits, arg.Interface()); err != nil {
-		stdlog.Printf("MJF :: unmarshal bits=%#q err=%v", string(bits), err)
 		return nil, err
 	}
 	return []reflect.Value{reflect.ValueOf(ctx), arg}, nil
@@ -161,10 +159,11 @@ func adjustParams(fn *RPCFunc, data []byte) (json.RawMessage, error) {
 			m[fn.argNames[i]] = arg
 		}
 		return json.Marshal(m)
-	} else if !bytes.HasPrefix(base, []byte("{")) {
-		return nil, errors.New("parameters must be an object or an array")
+	} else if bytes.HasPrefix(base, []byte("{")) || bytes.Equal(base, []byte("null")) {
+		return base, nil
 	}
-	return base, nil
+	return nil, errors.New("parameters must be an object or an array")
+
 }
 
 // isStringValue reports whether data is a JSON string value.
