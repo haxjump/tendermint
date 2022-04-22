@@ -62,7 +62,7 @@ func parseURLParams(ctx context.Context, rf *RPCFunc, req *http.Request) ([]refl
 		} else if b, err := strconv.ParseBool(v); err == nil {
 			params[name] = b
 		} else if lc := strings.ToLower(v); strings.HasPrefix(lc, "0x") {
-			if len(lc)%2 == 1 {
+			if len(lc) == 2 || len(lc)%2 == 1 {
 				return nil, fmt.Errorf("invalid hex string %q", lc)
 			}
 			params[name] = lc[2:]
