@@ -128,9 +128,14 @@ func newRPCFunc(f interface{}) (*RPCFunc, error) {
 	var argNames []string
 	if ptype != nil {
 		for i := 0; i < ptype.NumField(); i++ {
-			name := strings.SplitN(ptype.Field(i).Tag.Get("json"), ",", 2)[0]
-			if name != "" {
-				argNames = append(argNames, name)
+			field := ptype.Field(i)
+			if tag := strings.SplitN(field.Tag.Get("json"), ",", 2)[0]; tag != "" && tag != "-" {
+				argNames = append(argNames, tag)
+			} else if tag == "-" {
+				// If the tag is "-" the field should explicitly be ignored, even
+				// if it is otherwise eligible.
+			} else if field.IsExported() && !field.Anonymous {
+				argNames = append(argNames, adjustFieldName(field.Name))
 			}
 		}
 	}
@@ -141,4 +146,8 @@ func newRPCFunc(f interface{}) (*RPCFunc, error) {
 		result:   rtype,
 		argNames: argNames,
 	}, nil
+}
+
+func adjustFieldName(name string) string {
+	return strings.ToLower(name[:1]) + name[1:]
 }
