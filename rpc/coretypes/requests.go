@@ -64,7 +64,7 @@ type RequestBlockSearch struct {
 }
 
 type RequestValidators struct {
-	Height  *int64 `json:"height"`
+	Height  *Int64 `json:"height"`
 	Page    *Int64 `json:"page"`
 	PerPage *Int64 `json:"per_page"`
 }
@@ -176,4 +176,13 @@ func (z *Int64) IntPtr() *int {
 	}
 	v := int(*z)
 	return &v
+}
+
+// Int64Ptr returns an *Int64 that points to the same value as v, or nil.
+func Int64Ptr(v *int) *Int64 {
+	if v == nil {
+		return nil
+	}
+	z := Int64(*v)
+	return &z
 }
