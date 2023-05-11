@@ -8,7 +8,9 @@ import (
 	"os"
 	"runtime/debug"
 	"sort"
+	"strconv"
 	"time"
+	"math"
 
 	"github.com/gogo/protobuf/proto"
 
@@ -41,6 +43,27 @@ var (
 )
 
 var msgQueueSize = 1000
+
+var OfflinePunishStartHeight = getOfflinePunishStartHeight()
+
+// NOTE:
+// Set a correct value for the `$TENDERMINT_OFFLINE_PUNISH_START_HEIGHT` !
+func getOfflinePunishStartHeight() int64 {
+	h_str := os.Getenv("TENDERMINT_OFFLINE_PUNISH_START_HEIGHT")
+	if "" == h_str {
+		h_str = "0"
+	}
+	h, err := strconv.ParseUint(h_str, 0, 64)
+	if nil == err {
+		if h > uint64(math.MaxInt64) {
+			panic("The value of `$TENDERMINT_OFFLINE_PUNISH_START_HEIGHT` is too big")
+		} else {
+			return int64(h)
+		}
+	}
+
+	panic("The value of `$TENDERMINT_OFFLINE_PUNISH_START_HEIGHT` is invalid")
+}
 
 // msgs from the reactor which may update the state
 type msgInfo struct {
@@ -994,7 +1017,18 @@ func (cs *State) enterNewRound(height int64, round int32) {
 	validators := cs.Validators
 	if cs.Round < round {
 		validators = validators.Copy()
-		validators.IncrementProposerPriority(tmmath.SafeSubInt32(round, cs.Round))
+		if 0 < round && OfflinePunishStartHeight < height {
+			valsPunished := validators.LqmIncrementProposerPriority(round-cs.Round, true)
+
+			// record the changes on the next height
+			for _, val := range cs.state.NextValidators.Validators {
+				if v, ok := valsPunished[val.Address.String()]; ok {
+					val.ProposerPriority = v.ProposerPriority
+				}
+			}
+		} else {
+			validators.IncrementProposerPriority(tmmath.SafeSubInt32(round, cs.Round))
+		}
 	}
 
 	// Setup new round

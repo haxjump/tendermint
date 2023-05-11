@@ -137,6 +137,38 @@ func (vals *ValidatorSet) IncrementProposerPriority(times int32) {
 	vals.Proposer = proposer
 }
 
+func (vals *ValidatorSet) LqmIncrementProposerPriority(times int32, is_increasing_round bool) map[string]*Validator {
+	if vals.IsNilOrEmpty() {
+		panic("empty validator set")
+	}
+	if times <= 0 {
+		panic("Cannot call IncrementProposerPriority with non-positive times")
+	}
+
+	// Cap the difference between priorities to be proportional to 2*totalPower by
+	// re-normalizing priorities, i.e., rescale all priorities by multiplying with:
+	//  2*totalVotingPower/(maxPriority - minPriority)
+	diffMax := PriorityWindowSizeFactor * vals.TotalVotingPower()
+	vals.RescalePriorities(diffMax)
+	vals.shiftByAvgProposerPriority()
+
+	valsPunished := make(map[string]*Validator, times)
+	var valPunished *Validator
+	var proposer *Validator
+	// Call IncrementProposerPriority(1) times times.
+	for i := int32(0); i < times; i++ {
+		proposer, valPunished = vals.lqmIncrementProposerPriority(is_increasing_round)
+		if nil != valPunished {
+			valsPunished[valPunished.Address.String()] = valPunished
+		}
+
+		// We update it for each time
+		vals.Proposer = proposer
+	}
+
+	return valsPunished
+}
+
 // RescalePriorities rescales the priorities such that the distance between the
 // maximum and minimum is smaller than `diffMax`. Panics if validator set is
 // empty.
@@ -177,13 +209,41 @@ func (vals *ValidatorSet) incrementProposerPriority() *Validator {
 	return mostest
 }
 
+func (vals *ValidatorSet) lqmIncrementProposerPriority(is_increasing_round bool) (*Validator, *Validator) {
+	var valPunished *Validator
+	for _, val := range vals.Validators {
+		// Check for overflow for sum.
+		newPrio := safeAddClip(val.ProposerPriority, val.VotingPower)
+
+		// Imprison the latest proposer that failed to produce a block for a period of time
+		if is_increasing_round && val.Address.String() == vals.Proposer.Address.String() {
+			newPrio = math.MinInt64
+			valPunished = val
+		}
+
+		val.ProposerPriority = newPrio
+	}
+	// Decrement the validator with most ProposerPriority.
+	mostest := vals.getValWithMostPriority()
+	// Mind the underflow.
+	mostest.ProposerPriority = safeSubClip(mostest.ProposerPriority, vals.TotalVotingPower())
+
+	return mostest, valPunished
+}
+
 // Should not be called on an empty validator set.
 func (vals *ValidatorSet) computeAvgProposerPriority() int64 {
 	n := int64(len(vals.Validators))
 	sum := big.NewInt(0)
+
 	for _, val := range vals.Validators {
+		if val.ProposerPriority < math.MinInt64 / 2 {
+			// is being punished, ignore it
+			continue
+		}
 		sum.Add(sum, big.NewInt(val.ProposerPriority))
 	}
+
 	avg := sum.Div(sum, big.NewInt(n))
 	if avg.IsInt64() {
 		return avg.Int64()
@@ -201,6 +261,11 @@ func computeMaxMinPriorityDiff(vals *ValidatorSet) int64 {
 	max := int64(math.MinInt64)
 	min := int64(math.MaxInt64)
 	for _, v := range vals.Validators {
+		if v.ProposerPriority < math.MinInt64 / 2 {
+			// is being punished, ignore it
+			continue
+		}
+
 		if v.ProposerPriority < min {
 			min = v.ProposerPriority
 		}
@@ -229,7 +294,12 @@ func (vals *ValidatorSet) shiftByAvgProposerPriority() {
 	}
 	avgProposerPriority := vals.computeAvgProposerPriority()
 	for _, val := range vals.Validators {
-		val.ProposerPriority = safeSubClip(val.ProposerPriority, avgProposerPriority)
+		if val.ProposerPriority < math.MinInt64 / 2 {
+			// is being punished, imprison it ~1000 blocks, maybe
+			val.ProposerPriority = safeSubClip(val.ProposerPriority, math.MinInt64 / 1000)
+		} else {
+			val.ProposerPriority = safeSubClip(val.ProposerPriority, avgProposerPriority)
+		}
 	}
 }
 
