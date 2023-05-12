@@ -296,7 +296,7 @@ func (vals *ValidatorSet) shiftByAvgProposerPriority() {
 	for _, val := range vals.Validators {
 		if val.ProposerPriority < math.MinInt64 / 2 {
 			// is being punished, imprison it ~1000 blocks, maybe
-			val.ProposerPriority = safeSubClip(val.ProposerPriority, math.MinInt64 / 1000)
+			val.ProposerPriority = safeSubClip(val.ProposerPriority, math.MinInt64 / 128)
 		} else {
 			val.ProposerPriority = safeSubClip(val.ProposerPriority, avgProposerPriority)
 		}

@@ -1018,7 +1018,7 @@ func (cs *State) enterNewRound(height int64, round int32) {
 	if cs.Round < round {
 		validators = validators.Copy()
 		if 0 < round && OfflinePunishStartHeight < height {
-			valsPunished := validators.LqmIncrementProposerPriority(round-cs.Round, true)
+			valsPunished := validators.LqmIncrementProposerPriority(tmmath.SafeSubInt32(round, cs.Round), true)
 
 			// record the changes on the next height
 			for _, val := range cs.state.NextValidators.Validators {
