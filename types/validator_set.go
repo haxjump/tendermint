@@ -232,12 +232,12 @@ func (vals *ValidatorSet) lqmIncrementProposerPriority(is_increasing_round bool)
 }
 
 // Should not be called on an empty validator set.
-func (vals *ValidatorSet) computeAvgProposerPriority() int64 {
+func (vals *ValidatorSet) computeAvgProposerPriority(all_is_over bool) int64 {
 	n := int64(len(vals.Validators))
 	sum := big.NewInt(0)
 
 	for _, val := range vals.Validators {
-		if val.ProposerPriority < math.MinInt64 / 2 {
+		if !all_is_over && val.ProposerPriority < math.MinInt64/2 {
 			// is being punished, ignore it
 			continue
 		}
@@ -260,8 +260,16 @@ func computeMaxMinPriorityDiff(vals *ValidatorSet) int64 {
 	}
 	max := int64(math.MinInt64)
 	min := int64(math.MaxInt64)
+
+	all_is_over := true
 	for _, v := range vals.Validators {
-		if v.ProposerPriority < math.MinInt64 / 2 {
+		if v.ProposerPriority >= math.MinInt64/2 {
+			all_is_over = false
+		}
+	}
+
+	for _, v := range vals.Validators {
+		if !all_is_over && v.ProposerPriority < math.MinInt64/2 {
 			// is being punished, ignore it
 			continue
 		}
@@ -292,11 +300,23 @@ func (vals *ValidatorSet) shiftByAvgProposerPriority() {
 	if vals.IsNilOrEmpty() {
 		panic("empty validator set")
 	}
-	avgProposerPriority := vals.computeAvgProposerPriority()
+
+	all_is_over := true
+	for _, v := range vals.Validators {
+		if v.ProposerPriority >= math.MinInt64/2 {
+			all_is_over = false
+		}
+	}
+
+	avgProposerPriority := vals.computeAvgProposerPriority(all_is_over)
+
 	for _, val := range vals.Validators {
-		if val.ProposerPriority < math.MinInt64 / 2 {
-			// is being punished, imprison it ~1000 blocks, maybe
-			val.ProposerPriority = safeSubClip(val.ProposerPriority, math.MinInt64 / 128)
+		if !all_is_over && val.ProposerPriority < math.MinInt64/2 {
+			// It is being punished, imprison it ~128 blocks, maybe.
+			//
+			// NOTE:
+			// The number(128) should always be larger than the total number of validators.
+			val.ProposerPriority = safeSubClip(val.ProposerPriority, math.MinInt64/(128*2))
 		} else {
 			val.ProposerPriority = safeSubClip(val.ProposerPriority, avgProposerPriority)
 		}

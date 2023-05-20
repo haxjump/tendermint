@@ -175,7 +175,8 @@ func (blockExec *BlockExecutor) ApplyBlock(
 	if err != nil {
 		return state, 0, fmt.Errorf("commit failed for application: %v", err)
 	}
-	// fmt.Println("\n\n [ == DEBUG == ]", state.Validators, state.NextValidators)
+
+	fmt.Printf("\n[ ==DEBUG== ] NextValidators(current height %v): %v", block.Height, state.NextValidators)
 
 	// Lock mempool, commit app state, update mempoool.
 	appHash, retainHeight, err := blockExec.Commit(state, block, abciResponses.DeliverTxs)
